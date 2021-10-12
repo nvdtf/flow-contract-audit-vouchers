@@ -1,0 +1,29 @@
+{
+	"emulators": {
+		"default": {
+			"port": 3569,
+			"serviceAccount": "emulator-account"
+		}
+	},
+	"contracts": {
+		"FlowContractAudits": "contracts/ContractAudits.cdc"
+	},
+	"networks": {
+		"emulator": "127.0.0.1:3569",
+		"mainnet": "access.mainnet.nodes.onflow.org:9000",
+		"testnet": "access.devnet.nodes.onflow.org:9000"
+	},
+	"accounts": {
+		"emulator-account": {
+			"address": "f8d6e0586b0a20c7",
+			"key": "6db714d6dbb547645d82c0c2e9fa01fc708dba58fc92e8f5c87191d76e6b62b6"
+		}
+	},
+	"deployments": {
+		"emulator": {
+			"emulator-account": [
+				"FlowContractAudits"
+			]
+		}
+	}
+}

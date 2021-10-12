@@ -3,8 +3,8 @@ pub contract FlowContractAudits {
 
     pub let AdminStoragePath: StoragePath
 
-    pub let ContractAuditorStoragePath: StoragePath
-    pub let ContractAuditorPublicPath: PublicPath
+    pub let ContractAuditorProxyStoragePath: StoragePath
+    pub let ContractAuditorProxyPublicPath: PublicPath
 
     pub event ContractInitialized()
     pub event AuditorCreated()
@@ -33,14 +33,12 @@ pub contract FlowContractAudits {
         
         access(self) var auditorCapability: Capability<&Auditor>?
         
-        pub fun setAuditorCapability(auditorCap: Capability<&Auditor>) {
-            self.auditorCapability = auditorCap
+        pub fun setAuditorCapability(cap: Capability<&Auditor>) {
+            self.auditorCapability = cap
         }
 
         pub fun addAuditVoucher(address: Address, codeHash: String) {
-            return <- self.auditorCapability!
-            .borrow()!
-            .addAuditVoucher(address: address, codeHash: codeHash)
+            self.auditorCapability!.borrow()!.addAuditVoucher(address: address, codeHash: codeHash)
         }
 
         init() {
