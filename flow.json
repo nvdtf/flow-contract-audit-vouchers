@@ -32,9 +32,7 @@
 	"deployments": {
 		"emulator": {
 			"emulator-account": [
-				"FlowContractAudits",
-				"FungibleToken",
-				"FlowToken"				
+				"FlowContractAudits"
 			]
 		}
 	}
