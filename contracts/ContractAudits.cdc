@@ -17,7 +17,8 @@ pub contract FlowContractAudits {
         }
     }  
 
-    access(account) fun checkAndBurnAuditVoucher(address: Address, codeHash: String): Bool {
+    // fix pub access
+    pub fun checkAndBurnAuditVoucher(address: Address, codeHash: String): Bool {
         if self.vouchers[address] == codeHash {
             self.vouchers.remove(key: address)
             return true

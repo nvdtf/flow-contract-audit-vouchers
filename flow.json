@@ -24,7 +24,7 @@
 			"address": "01cf0e2f2f715450",
 			"key": "6db714d6dbb547645d82c0c2e9fa01fc708dba58fc92e8f5c87191d76e6b62b6"
 		},
-		"emulator-2_admin": {
+		"emulator-2_developer": {
 			"address": "179b6b1cb6755e31",
 			"key": "6db714d6dbb547645d82c0c2e9fa01fc708dba58fc92e8f5c87191d76e6b62b6"
 		}
@@ -33,7 +33,9 @@
 		"emulator": {
 			"emulator-account": [
 				"FlowContractAudits"
-			]
+			],
+			"emulator-1_auditor" : [],
+			"emulator-2_developer" : []			
 		}
 	}
 }
