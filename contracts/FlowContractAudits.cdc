@@ -13,7 +13,7 @@ pub contract FlowContractAudits {
     pub event AuditVoucherBurned(_ address: Address, codeHash: String)
 
     // Dictionary of all vouchers currently available
-    pub var vouchers: {Address: String}
+    pub var vouchers: {Address: AuditVoucher}
 
     // The storage path for the admin resource
     pub let AdminStoragePath: StoragePath
@@ -24,24 +24,27 @@ pub contract FlowContractAudits {
     // The public path for auditors' AuditorProxy capability
     pub let AuditorProxyPublicPath: PublicPath    
 
-    // pub struct AuditVoucher {
-    //     pub let fillme
-    // }
+    pub struct AuditVoucher {
+        pub let codeHash: String
+        pub let expiryBlockHeight: UInt64
+
+        init(codeHash: String, expiryBlockHeight: UInt64) {
+            self.codeHash = codeHash
+            self.expiryBlockHeight = expiryBlockHeight
+        }
+    }
 
     pub resource Auditor {
+        
         pub fun addAuditVoucher(address: Address, codeHash: String) {
-            FlowContractAudits.vouchers.insert(key: address, codeHash)
+
+            let voucher = AuditVoucher(codeHash: codeHash, expiryBlockHeight: 1) 
+
+            FlowContractAudits.vouchers.insert(key: address, voucher)
+
             emit AuditVoucherCreated(address, codeHash: codeHash)
         }
-    }  
 
-    // fix pub access
-    pub fun checkAndBurnAuditVoucher(address: Address, codeHash: String): Bool {
-        if self.vouchers[address] == codeHash {
-            self.vouchers.remove(key: address)
-            return true
-        }
-        return false
     }
 
     pub resource interface AuditorProxyPublic {
@@ -71,10 +74,20 @@ pub contract FlowContractAudits {
     }
     
     pub resource Administrator {
+        
         pub fun createNewAuditor(): @Auditor {
             emit AuditorCreated()
             return <-create Auditor()
         }
+
+        pub fun checkAndBurnAuditVoucher(address: Address, codeHash: String): Bool {
+            if FlowContractAudits.vouchers[address] != nil {
+                FlowContractAudits.vouchers.remove(key: address)                
+                return true
+            }            
+            return false
+        }
+
     }
 
     init() {
