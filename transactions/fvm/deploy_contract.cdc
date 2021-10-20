@@ -1,4 +1,4 @@
-import FlowContractAudits from "../../contracts/ContractAudits.cdc"
+import FlowContractAudits from "../../contracts/FlowContractAudits.cdc"
 
 transaction() {
     

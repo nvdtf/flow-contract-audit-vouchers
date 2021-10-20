@@ -1,4 +1,4 @@
-import FlowContractAudits from "../../contracts/ContractAudits.cdc"
+import FlowContractAudits from "../../contracts/FlowContractAudits.cdc"
 
 transaction {
 
@@ -8,12 +8,12 @@ transaction {
 
         auditor.save(
             <- auditorProxy, 
-            to: FlowContractAudits.ContractAuditorProxyStoragePath,
+            to: FlowContractAudits.AuditorProxyStoragePath,
         )
             
         auditor.link<&FlowContractAudits.AuditorProxy{FlowContractAudits.AuditorProxyPublic}>(
-            FlowContractAudits.ContractAuditorProxyPublicPath,
-            target: FlowContractAudits.ContractAuditorProxyStoragePath
+            FlowContractAudits.AuditorProxyPublicPath,
+            target: FlowContractAudits.AuditorProxyStoragePath
         )
     }
 }

@@ -1,19 +1,37 @@
 pub contract FlowContractAudits {
+
+    // Event that is emitted when this contract is created
+    pub event ContractInitialized()    
+    
+    // Event that is emitted when a new Auditor resource is created
+    pub event AuditorCreated()
+
+    // Event that is emitted when a new contract audit voucher is created
+    pub event AuditVoucherCreated(_ address: Address, codeHash: String)
+
+    // Event that is emitted when a contract audit voucher is removed/used
+    pub event AuditVoucherBurned(_ address: Address, codeHash: String)
+
+    // Dictionary of all vouchers currently available
     pub var vouchers: {Address: String}
 
+    // The storage path for the admin resource
     pub let AdminStoragePath: StoragePath
 
-    pub let ContractAuditorProxyStoragePath: StoragePath
-    pub let ContractAuditorProxyPublicPath: PublicPath
+    // The storage Path for auditors' AuditorProxy
+    pub let AuditorProxyStoragePath: StoragePath
+    
+    // The public path for auditors' AuditorProxy capability
+    pub let AuditorProxyPublicPath: PublicPath    
 
-    pub event ContractInitialized()
-    pub event AuditorCreated()
-    pub event ContractAudited(_ address: Address, codeHash: String)    
+    // pub struct AuditVoucher {
+    //     pub let fillme
+    // }
 
     pub resource Auditor {
         pub fun addAuditVoucher(address: Address, codeHash: String) {
             FlowContractAudits.vouchers.insert(key: address, codeHash)
-            emit ContractAudited(address, codeHash: codeHash)
+            emit AuditVoucherCreated(address, codeHash: codeHash)
         }
     }  
 
@@ -60,10 +78,11 @@ pub contract FlowContractAudits {
     }
 
     init() {
-        self.vouchers = {}  
+        self.vouchers = {}
+        
         self.AdminStoragePath = /storage/contractAuditAdmin
-        self.ContractAuditorProxyStoragePath = /storage/contractAuditorProxy
-        self.ContractAuditorProxyPublicPath = /public/contractAuditorProxy
+        self.AuditorProxyStoragePath = /storage/contractAuditorProxy
+        self.AuditorProxyPublicPath = /public/contractAuditorProxy
 
         let admin <- create Administrator()
         self.account.save(<-admin, to: self.AdminStoragePath)

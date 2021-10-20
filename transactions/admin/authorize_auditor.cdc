@@ -1,4 +1,4 @@
-import FlowContractAudits from "../../contracts/ContractAudits.cdc"
+import FlowContractAudits from "../../contracts/FlowContractAudits.cdc"
 
 transaction(auditorAddress: Address) {
 
@@ -32,7 +32,7 @@ transaction(auditorAddress: Address) {
 
         let capabilityReceiver = auditorAccount.getCapability
             <&FlowContractAudits.AuditorProxy{FlowContractAudits.AuditorProxyPublic}>
-            (FlowContractAudits.ContractAuditorProxyPublicPath)!
+            (FlowContractAudits.AuditorProxyPublicPath)!
             .borrow() ?? panic("Could not borrow capability receiver reference")
 
         capabilityReceiver.setAuditorCapability(cap: self.auditorCapability)
