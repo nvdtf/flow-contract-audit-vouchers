@@ -13,7 +13,7 @@ transaction() {
     }
 
     execute {
-        self.auditorCapability.addAuditVoucher(address: 0x179b6b1cb6755e31, codeHash: "test")
+        self.auditorCapability.addAuditVoucher(address: 0x179b6b1cb6755e31, codeHash: "test", expiryOffset: 1)
     }
 
 }

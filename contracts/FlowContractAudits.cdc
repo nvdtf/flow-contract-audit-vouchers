@@ -7,10 +7,10 @@ pub contract FlowContractAudits {
     pub event AuditorCreated()
 
     // Event that is emitted when a new contract audit voucher is created
-    pub event AuditVoucherCreated(_ address: Address, codeHash: String)
+    pub event AuditVoucherCreated(_ address: Address, codeHash: String, expiryBlockHeight: UInt64)
 
     // Event that is emitted when a contract audit voucher is removed/used
-    pub event AuditVoucherBurned(_ address: Address, codeHash: String)
+    pub event AuditVoucherBurned(_ address: Address, codeHash: String, expiryBlockHeight: UInt64)
 
     // Dictionary of all vouchers currently available
     pub var vouchers: {Address: AuditVoucher}
@@ -36,13 +36,15 @@ pub contract FlowContractAudits {
 
     pub resource Auditor {
         
-        pub fun addAuditVoucher(address: Address, codeHash: String) {
+        pub fun addAuditVoucher(address: Address, codeHash: String, expiryOffset: UInt64) {
 
-            let voucher = AuditVoucher(codeHash: codeHash, expiryBlockHeight: 1) 
+            let expiryBlockHeight = getCurrentBlock().height + expiryOffset
+            
+            let voucher = AuditVoucher(codeHash: codeHash, expiryBlockHeight: expiryBlockHeight)            
 
             FlowContractAudits.vouchers.insert(key: address, voucher)
 
-            emit AuditVoucherCreated(address, codeHash: codeHash)
+            emit AuditVoucherCreated(address, codeHash: codeHash, expiryBlockHeight: expiryBlockHeight)
         }
 
     }
@@ -59,8 +61,8 @@ pub contract FlowContractAudits {
             self.auditorCapability = cap
         }
 
-        pub fun addAuditVoucher(address: Address, codeHash: String) {
-            self.auditorCapability!.borrow()!.addAuditVoucher(address: address, codeHash: codeHash)
+        pub fun addAuditVoucher(address: Address, codeHash: String, expiryOffset: UInt64) {
+            self.auditorCapability!.borrow()!.addAuditVoucher(address: address, codeHash: codeHash, expiryOffset: expiryOffset)
         }
 
         init() {
@@ -82,8 +84,17 @@ pub contract FlowContractAudits {
 
         pub fun checkAndBurnAuditVoucher(address: Address, codeHash: String): Bool {
             if FlowContractAudits.vouchers[address] != nil {
-                FlowContractAudits.vouchers.remove(key: address)                
-                return true
+
+                if FlowContractAudits.vouchers[address]!.codeHash == codeHash {
+                    let v = FlowContractAudits.vouchers.remove(key: address)!
+                
+                    emit AuditVoucherBurned(address, codeHash: v.codeHash, expiryBlockHeight: v.expiryBlockHeight)
+
+                    if getCurrentBlock().height > v.expiryBlockHeight {
+                        return false
+                    }
+                    return true
+                }                
             }            
             return false
         }

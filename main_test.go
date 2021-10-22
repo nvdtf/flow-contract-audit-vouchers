@@ -20,9 +20,13 @@ func Test(test *testing.T) {
 
 	g.TransactionFromFile("auditor/new_audit").
 		SignProposeAndPayAs("auditor").
+		// RunPrintEventsFull()
 		Test(test).AssertSuccess()
 
 	g.TransactionFromFile("fvm/deploy_contract").
 		SignProposeAndPayAsService().
+		// RunPrintEventsFull()
 		Test(test).AssertSuccess()
+
+	// test.Fail()
 }
