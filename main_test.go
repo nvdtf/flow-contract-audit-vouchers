@@ -7,6 +7,8 @@ import (
 )
 
 func Test(test *testing.T) {
+	sampleContractHash := "HashyHash"
+
 	g := gwtf.NewGoWithTheFlowInMemoryEmulator()
 
 	g.TransactionFromFile("auditor/init").
@@ -20,11 +22,15 @@ func Test(test *testing.T) {
 
 	g.TransactionFromFile("auditor/new_audit").
 		SignProposeAndPayAs("auditor").
+		AccountArgument("developer").
+		StringArgument(sampleContractHash).
 		// RunPrintEventsFull()
 		Test(test).AssertSuccess()
 
 	g.TransactionFromFile("fvm/deploy_contract").
 		SignProposeAndPayAsService().
+		AccountArgument("developer").
+		StringArgument(sampleContractHash).
 		// RunPrintEventsFull()
 		Test(test).AssertSuccess()
 

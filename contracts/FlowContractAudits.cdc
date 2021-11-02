@@ -13,7 +13,7 @@ pub contract FlowContractAudits {
     pub event AuditVoucherBurned(_ address: Address, codeHash: String, expiryBlockHeight: UInt64)
 
     // Dictionary of all vouchers currently available
-    pub var vouchers: {Address: AuditVoucher}
+    pub var vouchers: {String: AuditVoucher}
 
     // The storage path for the admin resource
     pub let AdminStoragePath: StoragePath
@@ -25,13 +25,19 @@ pub contract FlowContractAudits {
     pub let AuditorProxyPublicPath: PublicPath    
 
     pub struct AuditVoucher {
+        pub let address: Address
         pub let codeHash: String
-        pub let expiryBlockHeight: UInt64
+        pub let expiryBlockHeight: UInt64        
 
-        init(codeHash: String, expiryBlockHeight: UInt64) {
+        init(address: Address, codeHash: String, expiryBlockHeight: UInt64) {
+            self.address = address
             self.codeHash = codeHash
             self.expiryBlockHeight = expiryBlockHeight
         }
+    }
+
+    pub fun getVoucherKey(address: Address, codeHash: String) : String {
+        return address.toString().concat("-").concat(codeHash)
     }
 
     pub resource Auditor {
@@ -39,10 +45,12 @@ pub contract FlowContractAudits {
         pub fun addAuditVoucher(address: Address, codeHash: String, expiryOffset: UInt64) {
 
             let expiryBlockHeight = getCurrentBlock().height + expiryOffset
-            
-            let voucher = AuditVoucher(codeHash: codeHash, expiryBlockHeight: expiryBlockHeight)            
 
-            FlowContractAudits.vouchers.insert(key: address, voucher)
+            let key = FlowContractAudits.getVoucherKey(address: address, codeHash: codeHash)
+            
+            let voucher = AuditVoucher(address: address, codeHash: codeHash, expiryBlockHeight: expiryBlockHeight)            
+
+            FlowContractAudits.vouchers.insert(key: key, voucher)
 
             emit AuditVoucherCreated(address, codeHash: codeHash, expiryBlockHeight: expiryBlockHeight)
         }
@@ -83,10 +91,11 @@ pub contract FlowContractAudits {
         }
 
         pub fun checkAndBurnAuditVoucher(address: Address, codeHash: String): Bool {
-            if FlowContractAudits.vouchers[address] != nil {
+            let key = FlowContractAudits.getVoucherKey(address: address, codeHash: codeHash)
+            if FlowContractAudits.vouchers[key] != nil {
 
-                if FlowContractAudits.vouchers[address]!.codeHash == codeHash {
-                    let v = FlowContractAudits.vouchers.remove(key: address)!
+                if FlowContractAudits.vouchers[key]!.codeHash == codeHash  {
+                    let v = FlowContractAudits.vouchers.remove(key: key)!
                 
                     emit AuditVoucherBurned(address, codeHash: v.codeHash, expiryBlockHeight: v.expiryBlockHeight)
 
