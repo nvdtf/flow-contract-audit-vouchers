@@ -1,6 +1,6 @@
 import FlowContractAudits from "../../contracts/FlowContractAudits.cdc"
 
-transaction(address: Address, codeHash: String) {
+transaction(address: Address, code: String) {
 
     let auditorAdmin: &FlowContractAudits.Administrator
     
@@ -23,7 +23,7 @@ transaction(address: Address, codeHash: String) {
     }
 
     execute {
-        if !self.auditorAdmin.checkAndBurnAuditVoucher(address: address, codeHash: codeHash) {
+        if !self.auditorAdmin.checkAndBurnAuditVoucher(address: address, code: code) {
             panic("invalid voucher")
         }    
     }
