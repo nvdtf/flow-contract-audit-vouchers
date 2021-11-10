@@ -6,33 +6,60 @@ import (
 	"github.com/bjartek/go-with-the-flow/v2/gwtf"
 )
 
-func Test(test *testing.T) {
-	sampleContractCode := "CodyCode"
+const (
+	TestContractCode = "CodyCode"
+
+	AuditorInitTx             = "auditor/init"
+	AuditorNewAuditTx         = "auditor/new_audit"
+	AdminAuthorizeAuditorTx   = "admin/authorize_auditor"
+	DeveloperDeployContractTx = "fvm/deploy_contract"
+
+	AuditorAccount   = "auditor"
+	DeveloperAccount = "developer"
+
+	ErrorNoVoucher = "invalid voucher"
+)
+
+func TestDeployContract(t *testing.T) {
 
 	g := gwtf.NewGoWithTheFlowInMemoryEmulator()
 
-	g.TransactionFromFile("auditor/init").
-		SignProposeAndPayAs("auditor").
-		Test(test).AssertSuccess()
-
-	g.TransactionFromFile("admin/authorize_auditor").
+	// no voucher on start
+	g.TransactionFromFile(DeveloperDeployContractTx).
 		SignProposeAndPayAsService().
-		AccountArgument("auditor").
-		Test(test).AssertSuccess()
+		AccountArgument(DeveloperAccount).
+		StringArgument(TestContractCode).
+		Test(t).AssertFailure(ErrorNoVoucher)
 
-	g.TransactionFromFile("auditor/new_audit").
-		SignProposeAndPayAs("auditor").
-		AccountArgument("developer").
-		StringArgument(sampleContractCode).
-		// RunPrintEventsFull()
-		Test(test).AssertSuccess()
+	// auditor init proxy
+	g.TransactionFromFile(AuditorInitTx).
+		SignProposeAndPayAs(AuditorAccount).
+		Test(t).AssertSuccess()
 
-	g.TransactionFromFile("fvm/deploy_contract").
+	// admin authorizes auditor
+	g.TransactionFromFile(AdminAuthorizeAuditorTx).
 		SignProposeAndPayAsService().
-		AccountArgument("developer").
-		StringArgument(sampleContractCode).
-		// RunPrintEventsFull()
-		Test(test).AssertSuccess()
+		AccountArgument(AuditorAccount).
+		Test(t).AssertSuccess()
 
-	// test.Fail()
+	// auditor creates new voucher
+	g.TransactionFromFile(AuditorNewAuditTx).
+		SignProposeAndPayAs(AuditorAccount).
+		AccountArgument(DeveloperAccount).
+		StringArgument(TestContractCode).
+		Test(t).AssertSuccess()
+
+	// developer can deploy audited contract
+	g.TransactionFromFile(DeveloperDeployContractTx).
+		SignProposeAndPayAsService().
+		AccountArgument(DeveloperAccount).
+		StringArgument(TestContractCode).
+		Test(t).AssertSuccess()
+
+	// developer cannot deploy audited contract twice
+	g.TransactionFromFile(DeveloperDeployContractTx).
+		SignProposeAndPayAsService().
+		AccountArgument(DeveloperAccount).
+		StringArgument(TestContractCode).
+		Test(t).AssertFailure(ErrorNoVoucher)
 }
