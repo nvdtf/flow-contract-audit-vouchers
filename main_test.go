@@ -59,7 +59,7 @@ func TestDeployContract(t *testing.T) {
 		Test(t).
 		AssertSuccess().
 		AssertEmitEvent(gwtf.NewTestEvent(AuditVoucherCreatedEventName, map[string]interface{}{
-			"address":           "0x" + g.Account(DeveloperAccount).Address().Hex(),
+			"address":           "0x" + g.Account(DeveloperAccount).Address().String(),
 			"codeHash":          TestContractCodeSHA3,
 			"expiryBlockHeight": "8",
 		}))
@@ -72,7 +72,7 @@ func TestDeployContract(t *testing.T) {
 		Test(t).
 		AssertSuccess().
 		AssertEmitEvent(gwtf.NewTestEvent(AuditVoucherBurnedEventName, map[string]interface{}{
-			"address":           "0x" + g.Account(DeveloperAccount).Address().Hex(),
+			"address":           "0x" + g.Account(DeveloperAccount).Address().String(),
 			"codeHash":          TestContractCodeSHA3,
 			"expiryBlockHeight": "8",
 		}))
