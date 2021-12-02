@@ -80,7 +80,7 @@ func TestDeployContract(t *testing.T) {
 		})).
 		AssertEmitEvent(gwtf.NewTestEvent(AuditVoucherUsedEventName, map[string]interface{}{
 			"address":           "0x" + g.Account(DeveloperAccount).Address().String(),
-			"codeHash":          TestContractCodeSHA3,
+			"key":               "0x" + g.Account(DeveloperAccount).Address().String() + "-" + TestContractCodeSHA3,
 			"expiryBlockHeight": "8",
 			"recurrent":         "false",
 		}))
