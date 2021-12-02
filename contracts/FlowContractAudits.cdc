@@ -9,10 +9,13 @@ pub contract FlowContractAudits {
     pub event AuditorCreated()
 
     // Event that is emitted when a new contract audit voucher is created
-    pub event AuditVoucherCreated(_ address: Address?, recurrent: Bool, expiryBlockHeight: UInt64?, codeHash: String)    
-    
+    pub event AuditVoucherCreated(_ address: Address?, recurrent: Bool, expiryBlockHeight: UInt64?, codeHash: String)
+
+    // Event that is emitted when a contract audit voucher is used
+    pub event AuditVoucherUsed(_ address: Address?, recurrent: Bool, expiryBlockHeight: UInt64?, codeHash: String)
+
     // Event that is emitted when a contract audit voucher is removed
-    pub event AuditVoucherBurned(_ address: Address?, recurrent: Bool, expiryBlockHeight: UInt64?, codeHash: String)
+    pub event AuditVoucherRemoved(key: String, recurrent: Bool, expiryBlockHeight: UInt64?)
 
     // Dictionary of all vouchers currently available
     access(contract) var vouchers: {String: AuditVoucher}
@@ -48,7 +51,7 @@ pub contract FlowContractAudits {
         if address != nil {
             return address!.toString().concat("-").concat(codeHash)
         }
-        return "any-".concat(codeHash)        
+        return "any-".concat(codeHash)
     }
 
     pub fun hashContractCode(code: String): String {
@@ -58,11 +61,11 @@ pub contract FlowContractAudits {
     pub resource Auditor {
 
         pub fun addAuditVoucher(address: Address?, recurrent: Bool, expiryOffset: UInt64?, code: String) {
-            
+
             var expiryBlockHeight: UInt64? = nil
             if expiryOffset != nil {
                 expiryBlockHeight = getCurrentBlock().height + expiryOffset!
-            }            
+            }
 
             let codeHash = FlowContractAudits.hashContractCode(code: code)
 
@@ -71,7 +74,7 @@ pub contract FlowContractAudits {
             let voucher = AuditVoucher(address: address, recurrent: recurrent, expiryBlockHeight: expiryBlockHeight, codeHash: codeHash)
 
             // TODO update existing voucher if audited with different params -> or should remove first? -> add remove for auditor
-            
+
             FlowContractAudits.vouchers.insert(key: key, voucher)
 
             emit AuditVoucherCreated(address, recurrent: recurrent, expiryBlockHeight: expiryBlockHeight, codeHash: codeHash)
@@ -111,27 +114,41 @@ pub contract FlowContractAudits {
             emit AuditorCreated()
             return <-create Auditor()
         }
-
-        // TODO new logic here
-        pub fun checkAndBurnAuditVoucher(address: Address, code: String): Bool {
+        
+        pub fun useVoucherForDeploy(address: Address, code: String): Bool {
             let codeHash = FlowContractAudits.hashContractCode(code: code)
-            let key = FlowContractAudits.generateVoucherKey(address: address, codeHash: codeHash)
-            if FlowContractAudits.vouchers[key] != nil {
 
-                if FlowContractAudits.vouchers[key]!.codeHash == codeHash  {                    
-                    let v = FlowContractAudits.vouchers.remove(key: key)!
+            var key = FlowContractAudits.generateVoucherKey(address: address, codeHash: codeHash)
 
-                    emit AuditVoucherBurned(address, recurrent: v.recurrent, expiryBlockHeight: v.expiryBlockHeight, codeHash: v.codeHash)                    
-
-                    // TODO check logic here with burning
-                    if v.expiryBlockHeight != nil {
-                        if getCurrentBlock().height > v.expiryBlockHeight! {
-                            return false
-                        }
-                    }                    
-                    return true
+            if !FlowContractAudits.vouchers.containsKey(key) {
+                key = FlowContractAudits.generateVoucherKey(address: nil, codeHash: codeHash)
+                if !FlowContractAudits.vouchers.containsKey(key) {
+                    return false
                 }
             }
+
+            let v = FlowContractAudits.vouchers[key]!
+
+            if v.codeHash == codeHash  {
+
+                if v.expiryBlockHeight != nil {
+                    if getCurrentBlock().height > v.expiryBlockHeight! {
+                        FlowContractAudits.vouchers.remove(key: key)
+                        emit AuditVoucherRemoved(key: key, recurrent: v.recurrent, expiryBlockHeight: v.expiryBlockHeight)
+                        return false
+                    }
+                }
+
+                if !v.recurrent {
+                    FlowContractAudits.vouchers.remove(key: key)
+                    emit AuditVoucherRemoved(key: key, recurrent: v.recurrent, expiryBlockHeight: v.expiryBlockHeight)                    
+                }
+                 
+                emit AuditVoucherUsed(address, recurrent: v.recurrent, expiryBlockHeight: v.expiryBlockHeight, codeHash: v.codeHash)
+                
+                return true
+            }
+
             return false
         }
 

@@ -20,7 +20,8 @@ const (
 
 	AuditorCreatedEventName      = "A.f8d6e0586b0a20c7.FlowContractAudits.AuditorCreated"
 	AuditVoucherCreatedEventName = "A.f8d6e0586b0a20c7.FlowContractAudits.AuditVoucherCreated"
-	AuditVoucherBurnedEventName  = "A.f8d6e0586b0a20c7.FlowContractAudits.AuditVoucherBurned"
+	AuditVoucherUsedEventName    = "A.f8d6e0586b0a20c7.FlowContractAudits.AuditVoucherUsed"
+	AuditVoucherRemovedEventName = "A.f8d6e0586b0a20c7.FlowContractAudits.AuditVoucherRemoved"
 
 	ErrorNoVoucher = "invalid voucher"
 )
@@ -62,6 +63,7 @@ func TestDeployContract(t *testing.T) {
 			"address":           "0x" + g.Account(DeveloperAccount).Address().String(),
 			"codeHash":          TestContractCodeSHA3,
 			"expiryBlockHeight": "8",
+			"recurrent":         "false",
 		}))
 
 	// developer can deploy audited contract
@@ -71,10 +73,16 @@ func TestDeployContract(t *testing.T) {
 		StringArgument(TestContractCode).
 		Test(t).
 		AssertSuccess().
-		AssertEmitEvent(gwtf.NewTestEvent(AuditVoucherBurnedEventName, map[string]interface{}{
+		AssertEmitEvent(gwtf.NewTestEvent(AuditVoucherRemovedEventName, map[string]interface{}{
+			"key":               "0x" + g.Account(DeveloperAccount).Address().String() + "-" + TestContractCodeSHA3,
+			"expiryBlockHeight": "8",
+			"recurrent":         "false",
+		})).
+		AssertEmitEvent(gwtf.NewTestEvent(AuditVoucherUsedEventName, map[string]interface{}{
 			"address":           "0x" + g.Account(DeveloperAccount).Address().String(),
 			"codeHash":          TestContractCodeSHA3,
 			"expiryBlockHeight": "8",
+			"recurrent":         "false",
 		}))
 
 	// developer cannot deploy audited contract twice

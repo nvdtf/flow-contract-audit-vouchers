@@ -13,7 +13,7 @@ transaction(address: Address, code: String) {
     }
 
     execute {
-        if !self.auditorAdmin.checkAndBurnAuditVoucher(address: address, code: code) {
+        if !self.auditorAdmin.useVoucherForDeploy(address: address, code: code) {
             panic("invalid voucher")
         }    
     }

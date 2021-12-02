@@ -13,8 +13,7 @@ transaction(address: Address, code: String) {
     }
 
     execute {
-        self.auditorCapability.addAuditVoucher(address: address, code: code, expiryOffset: 1)
-        // self.auditorCapability.addAuditVoucher(address: 0x179b6b1cb6755e31, codeHash: "test", expiryOffset: 1)
+        self.auditorCapability.addAuditVoucher(address: address, recurrent: false, expiryOffset: 1, code: code)        
     }
 
 }
