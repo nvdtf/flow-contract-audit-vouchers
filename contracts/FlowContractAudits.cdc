@@ -71,11 +71,13 @@ pub contract FlowContractAudits {
 
             let key = FlowContractAudits.generateVoucherKey(address: address, codeHash: codeHash)
 
-            let voucher = AuditVoucher(address: address, recurrent: recurrent, expiryBlockHeight: expiryBlockHeight, codeHash: codeHash)
+            let voucher = AuditVoucher(address: address, recurrent: recurrent, expiryBlockHeight: expiryBlockHeight, codeHash: codeHash)            
 
-            // TODO update existing voucher if audited with different params -> or should remove first? -> add remove for auditor
+            let oldAudit = FlowContractAudits.vouchers.insert(key: key, voucher)
 
-            FlowContractAudits.vouchers.insert(key: key, voucher)
+            if oldAudit != nil {
+                emit AuditVoucherRemoved(key: key, recurrent: oldAudit!.recurrent, expiryBlockHeight: oldAudit!.expiryBlockHeight)
+            }
 
             emit AuditVoucherCreated(address: address, recurrent: recurrent, expiryBlockHeight: expiryBlockHeight, codeHash: codeHash)
         }
