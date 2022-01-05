@@ -38,25 +38,16 @@ func TestDeployContract(t *testing.T) {
 		Test(t).
 		AssertFailure(ErrorNoVoucher)
 
-	// auditor init proxy
-	g.TransactionFromFile(AuditorInitTx).
-		SignProposeAndPayAs(AuditorAccount).
-		Test(t).
-		AssertSuccess()
-
-	// admin authorizes auditor
-	g.TransactionFromFile(AdminAuthorizeAuditorTx).
-		SignProposeAndPayAsService().
-		AccountArgument(AuditorAccount).
-		Test(t).
-		AssertSuccess().
-		AssertEmitEventName(AuditorCreatedEventName)
+	// init auditor
+	authorizeAuditor(g, t)
 
 	// auditor creates new voucher
 	g.TransactionFromFile(AuditorNewAuditTx).
 		SignProposeAndPayAs(AuditorAccount).
 		AccountArgument(DeveloperAccount).
 		StringArgument(TestContractCode).
+		BooleanArgument(false).
+		UInt64Argument(1).
 		Test(t).
 		AssertSuccess().
 		AssertEmitEvent(gwtf.NewTestEvent(AuditVoucherCreatedEventName, map[string]interface{}{
@@ -92,4 +83,120 @@ func TestDeployContract(t *testing.T) {
 		StringArgument(TestContractCode).
 		Test(t).
 		AssertFailure(ErrorNoVoucher)
+}
+
+func TestDeployRecurrentContract(t *testing.T) {
+	g := gwtf.NewGoWithTheFlowInMemoryEmulator()
+
+	// init auditor
+	authorizeAuditor(g, t)
+
+	// auditor adds recurrent voucher
+	g.TransactionFromFile(AuditorNewAuditTx).
+		SignProposeAndPayAs(AuditorAccount).
+		AccountArgument(DeveloperAccount).
+		StringArgument(TestContractCode).
+		BooleanArgument(true).
+		UInt64Argument(10).
+		Test(t).
+		AssertSuccess().
+		AssertEmitEvent(gwtf.NewTestEvent(AuditVoucherCreatedEventName, map[string]interface{}{
+			"address":           "0x" + g.Account(DeveloperAccount).Address().String(),
+			"codeHash":          TestContractCodeSHA3,
+			"expiryBlockHeight": "16",
+			"recurrent":         "true",
+		}))
+
+	// developer can deploy audited contract
+	g.TransactionFromFile(DeveloperDeployContractTx).
+		SignProposeAndPayAsService().
+		AccountArgument(DeveloperAccount).
+		StringArgument(TestContractCode).
+		Test(t).
+		AssertSuccess().
+		AssertEmitEvent(gwtf.NewTestEvent(AuditVoucherUsedEventName, map[string]interface{}{
+			"address":           "0x" + g.Account(DeveloperAccount).Address().String(),
+			"key":               "0x" + g.Account(DeveloperAccount).Address().String() + "-" + TestContractCodeSHA3,
+			"expiryBlockHeight": "16",
+			"recurrent":         "true",
+		}))
+
+	// developer can deploy audited contract again
+	g.TransactionFromFile(DeveloperDeployContractTx).
+		SignProposeAndPayAsService().
+		AccountArgument(DeveloperAccount).
+		StringArgument(TestContractCode).
+		Test(t).
+		AssertSuccess().
+		AssertEmitEvent(gwtf.NewTestEvent(AuditVoucherUsedEventName, map[string]interface{}{
+			"address":           "0x" + g.Account(DeveloperAccount).Address().String(),
+			"key":               "0x" + g.Account(DeveloperAccount).Address().String() + "-" + TestContractCodeSHA3,
+			"expiryBlockHeight": "16",
+			"recurrent":         "true",
+		}))
+
+	// auditor updates voucher to non-recurrent
+	g.TransactionFromFile(AuditorNewAuditTx).
+		SignProposeAndPayAs(AuditorAccount).
+		AccountArgument(DeveloperAccount).
+		StringArgument(TestContractCode).
+		BooleanArgument(false).
+		UInt64Argument(1).
+		Test(t).
+		AssertSuccess().
+		AssertEmitEvent(gwtf.NewTestEvent(AuditVoucherCreatedEventName, map[string]interface{}{
+			"address":           "0x" + g.Account(DeveloperAccount).Address().String(),
+			"codeHash":          TestContractCodeSHA3,
+			"expiryBlockHeight": "10",
+			"recurrent":         "false",
+		})).
+		AssertEmitEvent(gwtf.NewTestEvent(AuditVoucherRemovedEventName, map[string]interface{}{
+			"key":               "0x" + g.Account(DeveloperAccount).Address().String() + "-" + TestContractCodeSHA3,
+			"expiryBlockHeight": "16",
+			"recurrent":         "true",
+		}))
+
+	// developer deploys and uses voucher
+	g.TransactionFromFile(DeveloperDeployContractTx).
+		SignProposeAndPayAsService().
+		AccountArgument(DeveloperAccount).
+		StringArgument(TestContractCode).
+		Test(t).
+		AssertSuccess().
+		AssertEmitEvent(gwtf.NewTestEvent(AuditVoucherRemovedEventName, map[string]interface{}{
+			"key":               "0x" + g.Account(DeveloperAccount).Address().String() + "-" + TestContractCodeSHA3,
+			"expiryBlockHeight": "10",
+			"recurrent":         "false",
+		})).
+		AssertEmitEvent(gwtf.NewTestEvent(AuditVoucherUsedEventName, map[string]interface{}{
+			"address":           "0x" + g.Account(DeveloperAccount).Address().String(),
+			"key":               "0x" + g.Account(DeveloperAccount).Address().String() + "-" + TestContractCodeSHA3,
+			"expiryBlockHeight": "10",
+			"recurrent":         "false",
+		}))
+
+	// developer cannot deploy any more
+	g.TransactionFromFile(DeveloperDeployContractTx).
+		SignProposeAndPayAsService().
+		AccountArgument(DeveloperAccount).
+		StringArgument(TestContractCode).
+		Test(t).
+		AssertFailure(ErrorNoVoucher)
+
+}
+
+func authorizeAuditor(g *gwtf.GoWithTheFlow, t *testing.T) {
+	// auditor init proxy
+	g.TransactionFromFile(AuditorInitTx).
+		SignProposeAndPayAs(AuditorAccount).
+		Test(t).
+		AssertSuccess()
+
+	// admin authorizes auditor
+	g.TransactionFromFile(AdminAuthorizeAuditorTx).
+		SignProposeAndPayAsService().
+		AccountArgument(AuditorAccount).
+		Test(t).
+		AssertSuccess().
+		AssertEmitEventName(AuditorCreatedEventName)
 }
