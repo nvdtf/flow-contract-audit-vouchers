@@ -60,7 +60,7 @@ pub contract FlowContractAudits {
 
     pub resource Auditor {
 
-        pub fun addAuditVoucher(address: Address?, recurrent: Bool, expiryOffset: UInt64?, code: String) {
+        pub fun addVoucher(address: Address?, recurrent: Bool, expiryOffset: UInt64?, code: String) {
 
             var expiryBlockHeight: UInt64? = nil
             if expiryOffset != nil {
@@ -82,6 +82,15 @@ pub contract FlowContractAudits {
             emit AuditVoucherCreated(address: address, recurrent: recurrent, expiryBlockHeight: expiryBlockHeight, codeHash: codeHash)
         }
 
+        pub fun deleteVoucher(address: Address?, codeHash: String) {
+            let key = FlowContractAudits.generateVoucherKey(address: address, codeHash: codeHash)
+
+            let v = FlowContractAudits.vouchers.remove(key: key)
+            if v != nil {
+                emit AuditVoucherRemoved(key: key, recurrent: v!.recurrent, expiryBlockHeight: v!.expiryBlockHeight)
+            }
+        }
+
     }
 
     pub resource interface AuditorProxyPublic {
@@ -96,8 +105,12 @@ pub contract FlowContractAudits {
             self.auditorCapability = cap
         }
 
-        pub fun addAuditVoucher(address: Address?, recurrent: Bool, expiryOffset: UInt64?, code: String) {
-            self.auditorCapability!.borrow()!.addAuditVoucher(address: address, recurrent: recurrent, expiryOffset: expiryOffset, code: code)
+        pub fun addVoucher(address: Address?, recurrent: Bool, expiryOffset: UInt64?, code: String) {
+            self.auditorCapability!.borrow()!.addVoucher(address: address, recurrent: recurrent, expiryOffset: expiryOffset, code: code)
+        }
+
+        pub fun deleteVoucher(address: Address?, codeHash: String) {
+            self.auditorCapability!.borrow()!.deleteVoucher(address: address, codeHash: codeHash)
         }
 
         init() {

@@ -1,6 +1,6 @@
 import FlowContractAudits from "../../contracts/FlowContractAudits.cdc"
 
-transaction(address: Address?, code: String, recurrent: Bool, expiryOffset: UInt64) {
+transaction(address: Address?, codeHash: String) {
     
     let auditorCapability: &FlowContractAudits.AuditorProxy
 
@@ -11,6 +11,7 @@ transaction(address: Address?, code: String, recurrent: Bool, expiryOffset: UInt
     }
 
     execute {
-        self.auditorCapability.addVoucher(address: address, recurrent: recurrent, expiryOffset: expiryOffset, code: code)        
+        self.auditorCapability.deleteVoucher(address: address, codeHash: codeHash)        
     }
 }
+ 
