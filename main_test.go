@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/bjartek/go-with-the-flow/v2/gwtf"
+	"github.com/onflow/cadence"
 )
 
 func TestDeployContract(t *testing.T) {
@@ -18,14 +19,14 @@ func TestDeployContract(t *testing.T) {
 	authorizeAuditor(g, t)
 
 	// auditor creates new voucher for developer account
-	auditContract(g, t, false, false, 10, 19)
+	auditContract(g, t, false, false, 0, 0)
 
 	// developer cannot deploy to another account
 	deployAndFail(g, t, DeveloperAccount2)
 	deployAndFail(g, t, DeveloperAccount3)
 
 	// developer can deploy audited contract
-	deploy(g, t, DeveloperAccount, false, 19, false)
+	deploy(g, t, DeveloperAccount, false, 0, false)
 
 	// developer cannot deploy audited contract twice
 	deployAndFail(g, t, DeveloperAccount)
@@ -38,21 +39,21 @@ func TestDeployRecurrentContract(t *testing.T) {
 	authorizeAuditor(g, t)
 
 	// auditor adds recurrent voucher for any account
-	auditContract(g, t, true, true, 10, 18)
+	auditContract(g, t, true, true, 0, 0)
 
 	// developer can deploy audited contract
-	deploy(g, t, DeveloperAccount, true, 18, true)
+	deploy(g, t, DeveloperAccount, true, 0, true)
 
 	// developer can deploy audited contract again
-	deploy(g, t, DeveloperAccount2, true, 18, true)
-	deploy(g, t, DeveloperAccount3, true, 18, true)
+	deploy(g, t, DeveloperAccount2, true, 0, true)
+	deploy(g, t, DeveloperAccount3, true, 0, true)
 
 	// auditor updates voucher to non-recurrent for any account
 	g.TransactionFromFile(AuditorNewAuditAnyAccountTx).
 		SignProposeAndPayAs(AuditorAccount).
 		StringArgument(TestContractCode).
 		BooleanArgument(false).
-		UInt64Argument(1).
+		Argument(cadence.NewOptional(cadence.NewUInt64(1))).
 		Test(t).
 		AssertSuccess().
 		AssertEmitEvent(gwtf.NewTestEvent(VoucherCreatedEventName, map[string]interface{}{
@@ -63,7 +64,7 @@ func TestDeployRecurrentContract(t *testing.T) {
 		})).
 		AssertEmitEvent(gwtf.NewTestEvent(VoucherRemovedEventName, map[string]interface{}{
 			"key":               fmt.Sprintf("any-%s", TestContractCodeSHA3),
-			"expiryBlockHeight": "18",
+			"expiryBlockHeight": "",
 			"recurrent":         "true",
 		}))
 
@@ -81,10 +82,10 @@ func TestDeleteVoucher(t *testing.T) {
 	authorizeAuditor(g, t)
 
 	// auditor adds recurrent voucher
-	auditContract(g, t, false, true, 10, 18)
+	auditContract(g, t, false, true, 0, 0)
 
 	// developer can deploy audited contract
-	deploy(g, t, DeveloperAccount, true, 18, false)
+	deploy(g, t, DeveloperAccount, true, 0, false)
 
 	// delete voucher
 	g.TransactionFromFile(AuditorDeleteAuditTx).
@@ -94,7 +95,7 @@ func TestDeleteVoucher(t *testing.T) {
 		AssertSuccess().
 		AssertEmitEvent(gwtf.NewTestEvent(VoucherRemovedEventName, map[string]interface{}{
 			"key":               "0x" + g.Account(DeveloperAccount).Address().String() + "-" + TestContractCodeSHA3,
-			"expiryBlockHeight": "18",
+			"expiryBlockHeight": "",
 			"recurrent":         "true",
 		}))
 

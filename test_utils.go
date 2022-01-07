@@ -60,7 +60,7 @@ func deployAndFail(g *gwtf.GoWithTheFlow, t *testing.T, account string) {
 		AssertFailure(ErrorNoVoucher)
 }
 
-func auditContract(g *gwtf.GoWithTheFlow, t *testing.T, anyAccount bool, recurrent bool, expiryOffset uint64, expiryBlockHeight uint64) {
+func auditContract(g *gwtf.GoWithTheFlow, t *testing.T, anyAccount bool, recurrent bool, expiryOffset int, expiryBlockHeight int) {
 	var builder gwtf.FlowTransactionBuilder
 	var address string
 
@@ -72,26 +72,38 @@ func auditContract(g *gwtf.GoWithTheFlow, t *testing.T, anyAccount bool, recurre
 			AccountArgument(DeveloperAccount)
 	}
 
-	builder.SignProposeAndPayAs(AuditorAccount).
+	builder = builder.SignProposeAndPayAs(AuditorAccount).
 		StringArgument(TestContractCode).
-		BooleanArgument(recurrent).
-		UInt64Argument(expiryOffset).
+		BooleanArgument(recurrent)
+
+	expiryHeight := ""
+	if expiryOffset > 0 {
+		builder = builder.UInt64Argument(uint64(expiryOffset))
+		expiryHeight = fmt.Sprintf("%d", expiryBlockHeight)
+	} else {
+		builder = builder.Argument(cadence.NewOptional(nil))
+	}
+
+	builder.
 		Test(t).
 		AssertSuccess().
 		AssertEmitEvent(gwtf.NewTestEvent(VoucherCreatedEventName, map[string]interface{}{
 			"address":           address,
 			"codeHash":          TestContractCodeSHA3,
-			"expiryBlockHeight": fmt.Sprintf("%d", expiryBlockHeight),
+			"expiryBlockHeight": expiryHeight,
 			"recurrent":         fmt.Sprintf("%t", recurrent),
 		}))
 }
 
-func deploy(g *gwtf.GoWithTheFlow, t *testing.T, account string, recurrent bool, expiryBlockHeight uint64, anyAccountVoucher bool) {
+func deploy(g *gwtf.GoWithTheFlow, t *testing.T, account string, recurrent bool, expiryBlockHeight int, anyAccountVoucher bool) {
 	key := fmt.Sprintf("0x%s-%s", g.Account(account).Address().String(), TestContractCodeSHA3)
 	if anyAccountVoucher {
 		key = fmt.Sprintf("any-%s", TestContractCodeSHA3)
 	}
-	expiryBlockHeightStr := fmt.Sprintf("%d", expiryBlockHeight)
+	expiryBlockHeightStr := ""
+	if expiryBlockHeight > 0 {
+		expiryBlockHeightStr = fmt.Sprintf("%d", expiryBlockHeight)
+	}
 	recurrentStr := fmt.Sprintf("%t", recurrent)
 
 	result := g.TransactionFromFile(DeveloperDeployContractTx).
