@@ -1,6 +1,6 @@
 import FlowContractAudits from "../../contracts/FlowContractAudits.cdc"
 
-transaction(address: Address?, codeHash: String) {
+transaction(key: String) {
     
     let auditorCapability: &FlowContractAudits.AuditorProxy
 
@@ -11,7 +11,7 @@ transaction(address: Address?, codeHash: String) {
     }
 
     execute {
-        self.auditorCapability.deleteVoucher(address: address, codeHash: codeHash)        
+        self.auditorCapability.deleteVoucher(key: key)        
     }
 }
  

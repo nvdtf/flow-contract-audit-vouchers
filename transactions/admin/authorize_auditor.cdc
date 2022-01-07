@@ -1,27 +1,23 @@
 import FlowContractAudits from "../../contracts/FlowContractAudits.cdc"
 
-transaction(auditorAddress: Address) {
-
-    let resourceStoragePath: StoragePath
-    let capabilityPrivatePath: CapabilityPath
+transaction(auditorAddress: Address) {    
     let auditorCapability: Capability<&FlowContractAudits.Auditor>
 
     prepare(adminAccount: AuthAccount) {
 
-        // These paths must be unique within the contract account's storage
-        self.resourceStoragePath = /storage/auditor     // e.g. /storage/auditor_01
-        self.capabilityPrivatePath = /private/auditor // e.g. /private/auditor_01
+        // These paths must be unique within the contract account's storage for each auditor
+        let resourceStoragePath = /storage/auditor_01
+        let capabilityPrivatePath = /private/auditor_01
 
-        // Create a reference to the admin resource in storage.
+        // Create a reference to the admin resource in storage
         let auditorAdmin = adminAccount.borrow<&FlowContractAudits.Administrator>(from: FlowContractAudits.AdminStoragePath)
             ?? panic("Could not borrow a reference to the admin resource")
 
-        // Create a new auditor resource and a private link to a capability for it in the admin's storage.
+        // Create a new auditor resource and a private link to a capability to it in the admin's storage
         let auditor <- auditorAdmin.createNewAuditor()
-        adminAccount.save(<- auditor, to: self.resourceStoragePath)
+        adminAccount.save(<- auditor, to: resourceStoragePath)
         self.auditorCapability = adminAccount.link<&FlowContractAudits.Auditor>(
-            self.capabilityPrivatePath,
-            target: self.resourceStoragePath
+            capabilityPrivatePath, target: resourceStoragePath
         ) ?? panic("Could not link auditor")
 
     }
