@@ -14,7 +14,6 @@ const (
 
 	AuditorInitTx                 = "auditor/init"
 	AuditorNewAuditTx             = "auditor/new_audit"
-	AuditorNewAuditAnyAccountTx   = "auditor/new_audit_any_account"
 	AuditorDeleteAuditTx          = "auditor/delete_audit"
 	AdminAuthorizeAuditorTx       = "admin/authorize_auditor"
 	AdminCleanupExpiredVouchersTx = "admin/cleanup_expired"
@@ -61,25 +60,25 @@ func deployAndFail(g *gwtf.GoWithTheFlow, t *testing.T, account string) {
 }
 
 func auditContract(g *gwtf.GoWithTheFlow, t *testing.T, anyAccount bool, recurrent bool, expiryOffset int, expiryBlockHeight int) {
-	var builder gwtf.FlowTransactionBuilder
-	var address string
+	builder := g.TransactionFromFile(AuditorNewAuditTx)
 
+	var address string
 	if anyAccount {
-		builder = g.TransactionFromFile(AuditorNewAuditAnyAccountTx)
+		builder = builder.Argument(cadence.NewOptional(nil))
 	} else {
 		address = "0x" + g.Account(DeveloperAccount).Address().String()
-		builder = g.TransactionFromFile(AuditorNewAuditTx).
-			AccountArgument(DeveloperAccount)
+		acc := g.Account(DeveloperAccount)
+		builder = builder.Argument(cadence.NewOptional(cadence.NewAddress(acc.Address())))
 	}
 
 	builder = builder.SignProposeAndPayAs(AuditorAccount).
 		StringArgument(TestContractCode).
 		BooleanArgument(recurrent)
 
-	expiryHeight := ""
+	var expiryHeight string
 	if expiryOffset > 0 {
-		builder = builder.UInt64Argument(uint64(expiryOffset))
 		expiryHeight = fmt.Sprintf("%d", expiryBlockHeight)
+		builder = builder.Argument(cadence.NewOptional(cadence.NewUInt64(uint64(expiryOffset))))
 	} else {
 		builder = builder.Argument(cadence.NewOptional(nil))
 	}
@@ -100,10 +99,12 @@ func deploy(g *gwtf.GoWithTheFlow, t *testing.T, account string, recurrent bool,
 	if anyAccountVoucher {
 		key = fmt.Sprintf("any-%s", TestContractCodeSHA3)
 	}
+
 	expiryBlockHeightStr := ""
 	if expiryBlockHeight > 0 {
 		expiryBlockHeightStr = fmt.Sprintf("%d", expiryBlockHeight)
 	}
+
 	recurrentStr := fmt.Sprintf("%t", recurrent)
 
 	result := g.TransactionFromFile(DeveloperDeployContractTx).

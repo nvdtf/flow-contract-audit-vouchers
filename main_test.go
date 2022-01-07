@@ -49,8 +49,9 @@ func TestDeployRecurrentContract(t *testing.T) {
 	deploy(g, t, DeveloperAccount3, true, 0, true)
 
 	// auditor updates voucher to non-recurrent for any account
-	g.TransactionFromFile(AuditorNewAuditAnyAccountTx).
+	g.TransactionFromFile(AuditorNewAuditTx).
 		SignProposeAndPayAs(AuditorAccount).
+		Argument(cadence.NewOptional(nil)).
 		StringArgument(TestContractCode).
 		BooleanArgument(false).
 		Argument(cadence.NewOptional(cadence.NewUInt64(1))).
