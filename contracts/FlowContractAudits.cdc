@@ -140,48 +140,6 @@ pub contract FlowContractAudits {
             emit AuditorCreated()
             return <-create Auditor()
         }
-        
-        // This function will be called by the FVM on contract deploy/update
-        pub fun useVoucherForDeploy(address: Address, code: String): Bool {
-            let codeHash = FlowContractAudits.hashContractCode(code)
-            var key = FlowContractAudits.generateVoucherKey(address: address, codeHash: codeHash)
-
-            // first check for voucher based on target account
-            // if not found check for any account
-            if !FlowContractAudits.vouchers.containsKey(key) {
-                key = FlowContractAudits.generateVoucherKey(address: nil, codeHash: codeHash)
-                if !FlowContractAudits.vouchers.containsKey(key) {
-                    return false
-                }
-            }
-
-            let v = FlowContractAudits.vouchers[key]!
-
-            // ensure contract code matches the voucher
-            if v.codeHash == codeHash  {
-
-                // if expiryBlockHeight is set, check the current block height
-                // and remove/expire the voucher if not within the acceptable range
-                if v.expiryBlockHeight != nil {
-                    if getCurrentBlock().height > v.expiryBlockHeight! {
-                        FlowContractAudits.vouchers.remove(key: key)
-                        emit VoucherRemoved(key: key, recurrent: v.recurrent, expiryBlockHeight: v.expiryBlockHeight)
-                        return false
-                    }
-                }
-
-                // remove the voucher if not recurrent
-                if !v.recurrent {
-                    FlowContractAudits.vouchers.remove(key: key)
-                    emit VoucherRemoved(key: key, recurrent: v.recurrent, expiryBlockHeight: v.expiryBlockHeight)                    
-                }
-                 
-                emit VoucherUsed(address: address, key: key, recurrent: v.recurrent, expiryBlockHeight: v.expiryBlockHeight)                
-                return true
-            }
-
-            return false
-        }
 
         // Checks all vouchers and removes expired ones
         pub fun cleanupExpiredVouchers() {
@@ -195,6 +153,53 @@ pub contract FlowContractAudits {
                 }
             }
         }
+
+        // For testing
+        pub fun useVoucherForDeploy(address: Address, code: String): Bool {
+            return FlowContractAudits.useVoucherForDeploy(address: address, code: code)
+        }
+    }
+
+    // This function will be called by the FVM on contract deploy/update
+    access(contract) fun useVoucherForDeploy(address: Address, code: String): Bool {
+        let codeHash = FlowContractAudits.hashContractCode(code)
+        var key = FlowContractAudits.generateVoucherKey(address: address, codeHash: codeHash)
+
+        // first check for voucher based on target account
+        // if not found check for any account
+        if !FlowContractAudits.vouchers.containsKey(key) {
+            key = FlowContractAudits.generateVoucherKey(address: nil, codeHash: codeHash)
+            if !FlowContractAudits.vouchers.containsKey(key) {
+                return false
+            }
+        }
+
+        let v = FlowContractAudits.vouchers[key]!
+
+        // ensure contract code matches the voucher
+        if v.codeHash == codeHash  {
+
+            // if expiryBlockHeight is set, check the current block height
+            // and remove/expire the voucher if not within the acceptable range
+            if v.expiryBlockHeight != nil {
+                if getCurrentBlock().height > v.expiryBlockHeight! {
+                    FlowContractAudits.vouchers.remove(key: key)
+                    emit VoucherRemoved(key: key, recurrent: v.recurrent, expiryBlockHeight: v.expiryBlockHeight)
+                    return false
+                }
+            }
+
+            // remove the voucher if not recurrent
+            if !v.recurrent {
+                FlowContractAudits.vouchers.remove(key: key)
+                emit VoucherRemoved(key: key, recurrent: v.recurrent, expiryBlockHeight: v.expiryBlockHeight)                    
+            }
+                
+            emit VoucherUsed(address: address, key: key, recurrent: v.recurrent, expiryBlockHeight: v.expiryBlockHeight)                
+            return true
+        }
+
+        return false
     }
 
     init() {
