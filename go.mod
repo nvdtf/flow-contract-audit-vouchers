@@ -1,4 +1,4 @@
-module github.com/tehranifar/gwtf-vouchers
+module github.com/tehranifar/flow-contract-audit-vouchers
 
 go 1.16
 
